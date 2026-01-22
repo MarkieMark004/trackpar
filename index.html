@@ -1,0 +1,75 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TrackPar</title>
+  <link rel="stylesheet" href="styles/styles.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div class="brand">
+        <img class="logo" src="img/logo.png" alt="TrackPar logo" />
+      </div>
+      <div class="menu">
+        <button class="menu-lines" type="button" aria-expanded="false" aria-controls="menu-modal" aria-label="Open menu"></button>
+      </div>
+    </header>
+
+    <section class="section dropdown" data-dropdown>
+      <button class="section-title section-toggle" type="button" aria-expanded="false" aria-controls="play-body">
+        <span class="icon">+</span>
+        <h2>Play</h2>
+        <span class="chevron" aria-hidden="true">▾</span>
+      </button>
+      <div class="section-body dropdown-body" id="play-body" role="region" aria-label="Play options">
+        <a class="item" href="save-course-details.html">Create Score Card</a>
+        <a class="item" href="resume-active-card.html">Resume Active Card</a>
+      </div>
+    </section>
+
+    <section class="section dropdown" data-dropdown>
+      <button class="section-title section-toggle" type="button" aria-expanded="false" aria-controls="courses-body">
+        <span class="icon">▦</span>
+        <h2>Courses</h2>
+        <span class="chevron" aria-hidden="true">▾</span>
+      </button>
+      <div class="section-body dropdown-body" id="courses-body" role="region" aria-label="Course options">
+        <div class="search">
+          <span class="search-icon">🔍</span>
+          <input type="text" placeholder="Course name" aria-label="Course search" id="course-query" />
+        </div>
+        <button class="btn" id="course-search">Search Courses</button>
+        <div class="results" id="course-results" aria-live="polite"></div>
+      </div>
+    </section>
+
+    <section class="section dropdown" data-dropdown>
+      <button class="section-title section-toggle" type="button" aria-expanded="false" aria-controls="stats-body">
+        <span class="icon">▥</span>
+        <h2>Stats</h2>
+        <span class="chevron" aria-hidden="true">▾</span>
+      </button>
+      <div class="section-body dropdown-body" id="stats-body" role="region" aria-label="Stats options">
+        <a class="item" href="saved-score.html">Saved Score Cards</a>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" data-modal-close></div>
+  <aside class="modal" id="menu-modal" aria-hidden="true">
+    <div class="modal-header">
+      <h3>Menu</h3>
+      <button class="modal-close" type="button" data-modal-close aria-label="Close menu">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="welcome">Welcome Mark!</div>
+      <button class="modal-item" type="button">Logout</button>
+    </div>
+  </aside>
+
+  <script src="script/manual-courses.js"></script>
+  <script src="script/script.js"></script>
+</body>
+</html>

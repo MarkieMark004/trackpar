@@ -1,0 +1,25 @@
+﻿CREATE TABLE IF NOT EXISTS course_details (
+  id SERIAL PRIMARY KEY,
+  course_name TEXT NOT NULL,
+  hole_count INTEGER NOT NULL,
+  tee TEXT NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS active_rounds (
+  id SERIAL PRIMARY KEY,
+  course_name TEXT NOT NULL,
+  hole_count INTEGER NOT NULL,
+  tee TEXT NOT NULL,
+  started_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);
+
+CREATE TABLE IF NOT EXISTS scorecards (
+  id SERIAL PRIMARY KEY,
+  course_name TEXT NOT NULL,
+  hole_count INTEGER NOT NULL,
+  total_par INTEGER NOT NULL,
+  total_score INTEGER NOT NULL,
+  holes JSONB NOT NULL,
+  created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
+);

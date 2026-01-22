@@ -1,0 +1,57 @@
+﻿<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>TrackPar — Scorecard</title>
+  <link rel="stylesheet" href="styles/styles.css" />
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <button class="btn ghost" type="button" onclick="history.back()">Back</button>
+      <div class="brand">
+        <img class="logo" src="img/logo.png" alt="TrackPar logo" />
+      </div>
+      <div class="menu">
+        <button class="menu-lines" type="button" aria-expanded="false" aria-controls="menu-modal" aria-label="Open menu"></button>
+      </div>
+    </header>
+
+    <section class="section" style="border-top:none;padding-top:0;">
+      <div class="section-title">
+        <h2>Scorecard</h2>
+      </div>
+      <div class="section-body">
+        <div class="scorecard" id="scorecard">
+          <div class="scorecard-header">
+            <div class="scorecard-title">Holes 1-9</div>
+            <div class="scorecard-actions">
+              <button class="btn ghost" type="button" id="scorecard-prev" disabled>Prev 9</button>
+              <button class="btn" type="button" id="scorecard-next">Next 9</button>
+            </div>
+          </div>
+          <div class="scorecard-grid" id="scorecard-grid" aria-live="polite"></div>
+        </div>
+        <div class="scorecard-footer">
+          <button class="btn" type="button" id="scorecard-finished">Finished</button>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <div class="modal-backdrop" data-modal-close></div>
+  <aside class="modal" id="menu-modal" aria-hidden="true">
+    <div class="modal-header">
+      <h3>Menu</h3>
+      <button class="modal-close" type="button" data-modal-close aria-label="Close menu">×</button>
+    </div>
+    <div class="modal-body">
+      <div class="welcome">Welcome Mark!</div>
+      <button class="modal-item" type="button">Logout</button>
+    </div>
+  </aside>
+
+  <script src="script/script.js"></script>
+</body>
+</html>
