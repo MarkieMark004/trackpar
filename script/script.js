@@ -1,4 +1,7 @@
 ﻿document.addEventListener("DOMContentLoaded", () => {
+  if ("serviceWorker" in navigator) {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  }
   const dropdowns = document.querySelectorAll("[data-dropdown]");
   const menuButton = document.querySelector(".menu-lines");
   const modal = document.getElementById("menu-modal");
@@ -609,3 +612,4 @@
     }
   }
 });
+

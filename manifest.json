@@ -1,0 +1,16 @@
+﻿{
+  "name": "TrackPar",
+  "short_name": "TrackPar",
+  "start_url": "/index.html",
+  "display": "standalone",
+  "background_color": "#0F1F17",
+  "theme_color": "#0F1F17",
+  "icons": [
+    {
+      "src": "/img/icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
+  ]
+}
