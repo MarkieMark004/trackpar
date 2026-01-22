@@ -31,6 +31,28 @@
   const isReadOnly = urlParams.get("readonly") === "1";
   const isFresh = urlParams.get("fresh") === "1";
   const holesParam = urlParams.get("holes");
+  const API_BASE = "https://trackpar-production.up.railway.app";
+
+  const apiGet = async (path) => {
+    const res = await fetch(`${API_BASE}${path}`);
+    if (!res.ok) throw new Error("api_error");
+    return res.json();
+  };
+
+  const apiPost = async (path, body) => {
+    const res = await fetch(`${API_BASE}${path}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!res.ok) throw new Error("api_error");
+    return res.json();
+  };
+
+  const apiDelete = async (path) => {
+    const res = await fetch(`${API_BASE}${path}`, { method: "DELETE" });
+    if (!res.ok) throw new Error("api_error");
+  };
 
   dropdowns.forEach((dropdown) => {
     const toggle = dropdown.querySelector(".section-toggle");
@@ -138,6 +160,57 @@
     localStorage.setItem("savedScorecards", JSON.stringify(items));
   };
 
+  const syncFromServer = async () => {
+    try {
+      const [courseDetails, activeRounds, scorecards] = await Promise.all([
+        apiGet("/course-details"),
+        apiGet("/active-rounds"),
+        apiGet("/scorecards"),
+      ]);
+      const mappedCourseDetails = courseDetails.map((item) => ({
+        id: item.id,
+        server_id: item.id,
+        name: item.course_name,
+        holes: item.hole_count,
+        tee: item.tee,
+      }));
+      const mappedActiveRounds = activeRounds.map((item) => ({
+        id: item.id,
+        server_id: item.id,
+        name: item.course_name,
+        holes: item.hole_count,
+        tee: item.tee,
+        startedAt: item.started_at,
+      }));
+      const mappedScorecards = scorecards.map((item) => ({
+        id: item.id,
+        server_id: item.id,
+        name: item.course_name,
+        holeCount: item.hole_count,
+        totalPar: item.total_par,
+        totalScore: item.total_score,
+      }));
+      setSavedScorecards(mappedScorecards);
+      setActiveRounds(mappedActiveRounds);
+      saveCourseDetails(mappedCourseDetails);
+    } catch {
+      // ignore sync failures
+    }
+  };
+
+  const fetchSavedScorecard = async (id) => {
+    const data = await apiGet(`/scorecards/${id}`);
+    return {
+      id: data.id,
+      server_id: data.id,
+      name: data.course_name,
+      holeCount: data.hole_count,
+      totalPar: data.total_par,
+      totalScore: data.total_score,
+      holes: data.holes,
+    };
+  };
+
 
 
   const getActiveRounds = () => {
@@ -185,7 +258,12 @@
 
   const getSavedById = (id) => {
     if (!id) return null;
-    return getSavedScorecards().find((card) => String(card.id) === String(id)) || null;
+    return (
+      getSavedScorecards().find(
+        (card) =>
+          String(card.id) === String(id) || String(card.server_id) === String(id)
+      ) || null
+    );
   };
 
   const renderSavedScorecards = () => {
@@ -201,6 +279,7 @@
         const name = card.name || "Scorecard";
         const totalPar = Number(card.totalPar || 0);
         const totalScore = Number(card.totalScore || 0);
+        const viewId = card.server_id || card.id;
         return `
           <div class="result-item">
             <div class="result-main">
@@ -208,7 +287,7 @@
               <small>Par ${totalPar} · Score ${totalScore}</small>
             </div>
             <div class="result-actions">
-              <a class="result-action" href="saved-score-view.html?savedId=${card.id}&readonly=1&name=${encodeURIComponent(name)}">View</a>
+              <a class="result-action" href="saved-score-view.html?savedId=${viewId}&readonly=1&name=${encodeURIComponent(name)}">View</a>
               <button class="result-action danger" type="button" data-remove-id="${card.id}">Remove</button>
             </div>
           </div>
@@ -277,8 +356,10 @@
     });
   }
 
-  renderSavedScorecards();
-  renderActiveScorecards();
+  syncFromServer().finally(() => {
+    renderSavedScorecards();
+    renderActiveScorecards();
+  });
 
   if (savedScorecardsList) {
     savedScorecardsList.addEventListener("click", (event) => {
@@ -309,17 +390,33 @@
     confirmYes.addEventListener("click", () => {
       if (!pendingDeleteId) return;
       if (pendingDeleteType === "saved") {
-        const items = getSavedScorecards().filter(
+        const items = getSavedScorecards();
+        const target = items.find(
+          (card) => String(card.id) === String(pendingDeleteId)
+        );
+        const serverId = target?.server_id;
+        const next = items.filter(
           (card) => String(card.id) !== String(pendingDeleteId)
         );
-        setSavedScorecards(items);
+        if (serverId) {
+          apiDelete(`/scorecards/${serverId}`).catch(() => {});
+        }
+        setSavedScorecards(next);
         renderSavedScorecards();
       }
       if (pendingDeleteType === "active") {
-        const items = getActiveRounds().filter(
+        const items = getActiveRounds();
+        const target = items.find(
+          (round) => String(round.id) === String(pendingDeleteId)
+        );
+        const serverId = target?.server_id;
+        const next = items.filter(
           (round) => String(round.id) !== String(pendingDeleteId)
         );
-        setActiveRounds(items);
+        if (serverId) {
+          apiDelete(`/active-rounds/${serverId}`).catch(() => {});
+        }
+        setActiveRounds(next);
         renderActiveScorecards();
       }
       closeConfirmModal();
@@ -353,6 +450,7 @@
   let currentStart = 1;
   let parEditEnabled = false;
   let holeCount = 18;
+  let savedFetchInProgress = false;
   const scorecardKey = () => `scorecard:${courseNameParam}`;
   const parsKey = () => `pars:${courseNameParam}`;
 
@@ -411,6 +509,28 @@
 
   const renderScorecard = () => {
     if (!scorecardGrid || !scorecardTitle) return;
+    if (savedId) {
+      const savedCards = getSavedScorecards();
+      const existing = savedCards.find(
+        (card) => String(card.id) === String(savedId) || String(card.server_id) === String(savedId)
+      );
+      if (!existing?.holes && navigator.onLine && !savedFetchInProgress) {
+        savedFetchInProgress = true;
+        fetchSavedScorecard(savedId)
+          .then((fullCard) => {
+            const next = savedCards.filter(
+              (card) => String(card.id) !== String(savedId) && String(card.server_id) !== String(savedId)
+            );
+            next.unshift(fullCard);
+            setSavedScorecards(next);
+          })
+          .finally(() => {
+            savedFetchInProgress = false;
+            renderScorecard();
+          });
+        return;
+      }
+    }
     const end = Math.min(currentStart + 8, holeCount);
     scorecardTitle.textContent = `Holes ${currentStart}-${end}`;
     const savedData = savedId ? (getSavedById(savedId)?.holes || {}) : loadScorecard();
@@ -540,14 +660,31 @@
   }
 
   if (courseSave) {
-    courseSave.addEventListener("click", () => {
+    courseSave.addEventListener("click", async () => {
       const name = courseNameInput?.value.trim();
       const holes = courseHolesInput?.value || "18";
       const tee = courseTeeInput?.value || "Men";
       if (!name) return;
       const items = getCourseDetails();
+      let serverCourse = null;
+      let serverActive = null;
+      try {
+        serverCourse = await apiPost("/course-details", {
+          course_name: name,
+          hole_count: Number(holes),
+          tee,
+        });
+        serverActive = await apiPost("/active-rounds", {
+          course_name: name,
+          hole_count: Number(holes),
+          tee,
+        });
+      } catch {
+        // fall back to local only
+      }
       const next = {
-        id: Date.now(),
+        id: serverCourse?.id || Date.now(),
+        server_id: serverCourse?.id || null,
         name,
         holes,
         tee,
@@ -556,11 +693,12 @@
       saveCourseDetails(items);
       const active = getActiveRounds().filter((round) => round.name !== name);
       active.unshift({
-        id: Date.now(),
+        id: serverActive?.id || Date.now(),
+        server_id: serverActive?.id || null,
         name,
         holes,
         tee,
-        startedAt: Date.now(),
+        startedAt: serverActive?.started_at || Date.now(),
       });
       setActiveRounds(active);
       const nextUrl = `scorecard.html?name=${encodeURIComponent(name)}&holes=${encodeURIComponent(holes)}`;
@@ -572,7 +710,7 @@
     if (isReadOnly) {
       scorecardFinished.disabled = true;
     } else {
-      scorecardFinished.addEventListener("click", () => {
+      scorecardFinished.addEventListener("click", async () => {
         const data = loadScorecard();
         const pars = {};
         let totalPar = 0;
@@ -587,9 +725,22 @@
           if (!Number.isNaN(scoreVal)) totalScore += scoreVal;
         }
         savePars(pars);
+        let serverCard = null;
+        try {
+          serverCard = await apiPost("/scorecards", {
+            course_name: courseNameParam,
+            hole_count: Number(holeCount),
+            total_par: totalPar,
+            total_score: totalScore,
+            holes: data,
+          });
+        } catch {
+          // fall back to local only
+        }
         const savedCards = getSavedScorecards();
         const newCard = {
-          id: Date.now(),
+          id: serverCard?.id || Date.now(),
+          server_id: serverCard?.id || null,
           name: courseNameParam,
           holeCount,
           totalPar,
@@ -599,7 +750,13 @@
         savedCards.unshift(newCard);
         setSavedScorecards(savedCards);
         renderSavedScorecards();
-        const active = getActiveRounds().filter((round) => round.name !== courseNameParam);
+        const activeAll = getActiveRounds();
+        const activeTarget = activeAll.find((round) => round.name === courseNameParam);
+        const activeServer = activeTarget?.server_id;
+        const active = activeAll.filter((round) => round.name !== courseNameParam);
+        if (activeServer) {
+          apiDelete(`/active-rounds/${activeServer}`).catch(() => {});
+        }
         setActiveRounds(active);
         renderActiveScorecards();
         const resetData = {};
